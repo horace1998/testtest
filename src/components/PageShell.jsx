@@ -14,6 +14,7 @@ import { synkify } from '@/api/synkifyClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavAction } from '@/lib/NavActionContext';
 import { moderate } from '@/lib/moderation';
+import { createCircleMilestonePost } from '@/lib/circleFeed';
 import { toast } from 'sonner';
 
 export default function PageShell({ children, goals = [], user }) {
@@ -32,7 +33,7 @@ export default function PageShell({ children, goals = [], user }) {
     });
   }, [registerHandler]);
 
-  const handleCameraClose = async (fileUrl, goal) => {
+  const handleCameraClose = async (fileUrl, goal, assetType = 'photo') => {
     setShowCamera(false);
     if (fileUrl && goal) {
       await synkify.entities.Milestone.create({
@@ -41,10 +42,17 @@ export default function PageShell({ children, goals = [], user }) {
         idol_name: goal.idol_name,
         idol_group: goal.idol_group,
         asset_url: fileUrl,
-        asset_type: 'photo',
+        asset_type: assetType,
         caption: '',
       });
+      await createCircleMilestonePost({
+        user,
+        goal,
+        assetUrl: fileUrl,
+        assetType,
+      });
       queryClient.invalidateQueries({ queryKey: ['milestones'] });
+      queryClient.invalidateQueries({ queryKey: ['circle-unified-feed'] });
       navigate('/gallery');
     }
   };

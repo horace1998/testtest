@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Specialist"
+  short_description: "Fix and polish Synkify frontend UX"
+  default_prompt: "Use $synkify-ui-specialist to improve this Synkify UI flow with scoped frontend changes."
+policy:
+  allow_implicit_invocation: true

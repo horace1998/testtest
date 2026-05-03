@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import ReportDialog from '@/components/feed/ReportDialog';
+import { activeMissionGoals, hasActiveMissionGoal, isMissionMember } from '@/lib/missionMembership';
 
 
 
@@ -16,33 +17,26 @@ export default function MissionCard({ mission, currentUser, userGoals = [], inde
   const [joining, setJoining] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
-  const isCreator = mission.creator_email === currentUser?.email;
-
-  // Source of truth: does the user currently have an ACTIVE goal linked to this mission?
-  const hasActiveLinkedGoal = userGoals.some(
-    g => g.mission_id === mission.id && g.status === 'active'
-  );
-  const isInMembersList = (mission.members || []).some(m => m.user_email === currentUser?.email);
-
-  // True membership = creator OR has active linked goal
-  const isMember = isCreator || hasActiveLinkedGoal;
+  const hasActiveLinkedGoal = hasActiveMissionGoal(userGoals, mission.id);
+  const isMember = isMissionMember(mission, currentUser?.email);
 
   // Stale: in members list but no active goal; auto-cleanup so user can rejoin.
   useEffect(() => {
-    if (!currentUser || isCreator) return;
-    if (isInMembersList && !hasActiveLinkedGoal) {
+    if (!currentUser) return;
+    if (isMember && !hasActiveLinkedGoal) {
       synkify.functions.invoke('leaveMission', { mission_id: mission.id })
         .then(() => queryClient.invalidateQueries({ queryKey: ['missions'] }))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['goals'] }))
         .catch(() => {});
     }
-  }, [currentUser?.email, mission.id, isInMembersList, hasActiveLinkedGoal, isCreator]);
+  }, [currentUser?.email, mission.id, isMember, hasActiveLinkedGoal, queryClient]);
 
   // Personal goals should not block joining a circle mission.
-  const activeMissionGoals = userGoals.filter(g => g.status === 'active' && g.mission_id);
-  const canJoin = activeMissionGoals.length < 3;
+  const activeMissionGoalCount = activeMissionGoals(userGoals).length;
+  const canJoin = activeMissionGoalCount < 3;
 
   const handleJoin = async () => {
-    if (!currentUser || isMember || isCreator) return;
+    if (!currentUser || isMember) return;
     if (!canJoin) {
       toast.error('Max 3 active missions. Complete or leave one to join another.');
       return;
@@ -106,10 +100,10 @@ export default function MissionCard({ mission, currentUser, userGoals = [], inde
             </span>
           </div>
 
-          {isCreator || isMember ? (
+          {isMember ? (
             <div className="flex gap-2">
               <div className="flex-1 border border-foreground/15 rounded-xl py-2 text-center text-[11px] font-heading text-foreground flex items-center justify-center gap-1">
-                {isCreator ? `Your mission · ${mission.member_count || 1} joined` : (<><Check className="w-3.5 h-3.5" /> Joined</>)}
+                <Check className="w-3.5 h-3.5" /> Joined
               </div>
               <Link
                 to={`/circle/${mission.id}`}

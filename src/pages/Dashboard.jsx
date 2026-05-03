@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { synkify } from '@/api/synkifyClient';
@@ -20,6 +20,8 @@ import GlassCard from '@/components/ui/GlassCard';
 import CalendarWidget from '@/components/dashboard/CalendarWidget';
 import HeroDecorator from '@/components/dashboard/HeroDecorator';
 import SettingsModal from '@/components/SettingsModal';
+import { isMissionMember } from '@/lib/missionMembership';
+import { repairMissionStateForUser } from '@/lib/repairMissionState';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -134,16 +136,13 @@ export default function Dashboard() {
 
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const activeGoals = goals.filter(g => g.status === 'active');
-  const completedCount = goals.filter(g => g.status === 'completed').length;
-  const totalCheckins = goals.reduce((sum, g) => sum + (g.daily_checkins?.filter(c => c.completed).length || 0), 0);
-  const milestoneCount = milestones.length;
-  const currentRank = getFanRank(totalCheckins, milestoneCount);
-  const canAddGoal = activeGoals.length < 3;
-  const activeMissionGoals = activeGoals.filter((goal) => goal.mission_id);
+  const rawActiveGoals = goals.filter(g => g.status === 'active');
+  const activeMissionGoals = rawActiveGoals.filter((goal) => goal.mission_id);
 
-  const { data: activeMissions = [] } = useQuery({
-    queryKey: ['active-missions', activeMissionGoals.map((goal) => goal.mission_id).sort().join(',')],
+  const activeMissionIdsKey = activeMissionGoals.map((goal) => goal.mission_id).sort().join(',');
+
+  const { data: activeMissions = [], isFetched: activeMissionsFetched } = useQuery({
+    queryKey: ['active-missions', activeMissionIdsKey],
     queryFn: async () => {
       const ids = [...new Set(activeMissionGoals.map((goal) => goal.mission_id).filter(Boolean))];
       const records = await Promise.all(ids.map((id) => synkify.entities.Mission.get(id).catch(() => null)));
@@ -152,7 +151,53 @@ export default function Dashboard() {
     enabled: activeMissionGoals.length > 0,
   });
 
-  const missionById = new Map(activeMissions.map((mission) => [mission.id, mission]));
+  const missionById = useMemo(() => new Map(activeMissions.map((mission) => [mission.id, mission])), [activeMissions]);
+  const validActiveMissionGoals = activeMissionGoals.filter((goal) =>
+    isMissionMember(missionById.get(goal.mission_id), user?.email)
+  );
+  const visibleGoals = goals.filter((goal) => {
+    if (!goal.mission_id) return true;
+    if (goal.status !== 'active') return true;
+    return validActiveMissionGoals.some((activeGoal) => activeGoal.id === goal.id);
+  });
+  const activeGoals = visibleGoals.filter(g => g.status === 'active');
+  const completedCount = visibleGoals.filter(g => g.status === 'completed').length;
+  const totalCheckins = visibleGoals.reduce((sum, g) => sum + (g.daily_checkins?.filter(c => c.completed).length || 0), 0);
+  const milestoneCount = milestones.length;
+  const currentRank = getFanRank(totalCheckins, milestoneCount);
+  const canAddGoal = activeGoals.length < 3;
+
+  useEffect(() => {
+    if (!user?.email || activeMissionGoals.length === 0) return;
+    if (!activeMissionsFetched) return;
+
+    const staleGoals = activeMissionGoals.filter((goal) => {
+      const mission = missionById.get(goal.mission_id);
+      return !mission || !isMissionMember(mission, user.email);
+    });
+    if (staleGoals.length === 0) return;
+
+    Promise.all(
+      staleGoals.map((goal) =>
+        synkify.functions.invoke('leaveMission', { mission_id: goal.mission_id, goal_id: goal.id }).catch(() => null)
+      )
+    ).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+      queryClient.invalidateQueries({ queryKey: ['active-missions'] });
+    });
+  }, [activeMissionGoals, activeMissionsFetched, missionById, queryClient, user?.email]);
+
+  useEffect(() => {
+    if (!user?.email || goals.length === 0) return;
+
+    repairMissionStateForUser(user, goals).then((result) => {
+      if (!result.abandonedGoals && !result.leftMissions) return;
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+      queryClient.invalidateQueries({ queryKey: ['active-missions'] });
+    }).catch(() => null);
+  }, [goals, queryClient, user]);
 
   const handleCheckin = (goal) => {
     checkinMutation.mutate({ goal, prevRankId: currentRank.id });
@@ -182,7 +227,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen relative pb-32" style={{ background: '#ffffff' }}>
       <HomeSplash />
-      <PageShell goals={goals} user={user}>
+      <PageShell goals={visibleGoals} user={user}>
 
       <div className="relative z-10 px-5 pt-[3.5rem]">
         {/* Top utility bar */}
@@ -225,7 +270,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Active Missions */}
-        {activeMissionGoals.length > 0 && (
+        {activeGoals.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -239,12 +284,13 @@ export default function Dashboard() {
                 fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
                 textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
               }}>
-                Active Mission
+                Active Missions
               </span>
             </div>
             <div className="space-y-3">
-              {activeMissionGoals.map((goal, index) => {
+              {activeGoals.map((goal, index) => {
                 const mission = missionById.get(goal.mission_id);
+                const isPublicMission = !!goal.mission_id && !!mission;
                 const timelineValue = Number(goal.timeline_value || mission?.timeline_value || 0);
                 const timelineUnit = (goal.timeline_unit || mission?.timeline_unit || 'days').toLowerCase();
                 const startDate = goal.created_date ? new Date(goal.created_date) : new Date();
@@ -259,22 +305,24 @@ export default function Dashboard() {
 
                 return (
                   <div key={goal.id} className="rounded-2xl border border-foreground/10 bg-white/95 p-3 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/support-circle/${goal.mission_id}`)}
-                      className="mb-3 grid w-full grid-cols-3 gap-2 text-left"
-                    >
-                      {[
-                        { label: 'Duration', value: timelineValue ? `${timelineValue} ${timelineUnit}` : 'Open' },
-                        { label: 'Remaining', value: daysRemaining === null ? '--' : `${daysRemaining}d` },
-                        { label: 'Fans', value: mission?.member_count || 1 },
-                      ].map((item) => (
-                        <div key={item.label} className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-2 text-center">
-                          <p className="font-display text-xl leading-none text-foreground">{item.value}</p>
-                          <p className="mt-1 text-[8px] font-heading font-bold uppercase tracking-[0.18em] text-foreground/40">{item.label}</p>
-                        </div>
-                      ))}
-                    </button>
+                    {isPublicMission && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/support-circle/${goal.mission_id}`)}
+                        className="mb-3 grid w-full grid-cols-3 gap-2 text-left"
+                      >
+                        {[
+                          { label: 'Duration', value: timelineValue ? `${timelineValue} ${timelineUnit}` : 'Open' },
+                          { label: 'Remaining', value: daysRemaining === null ? '--' : `${daysRemaining}d` },
+                          { label: 'Fans', value: mission?.member_count || 1 },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-2 text-center">
+                            <p className="font-display text-xl leading-none text-foreground">{item.value}</p>
+                            <p className="mt-1 text-[8px] font-heading font-bold uppercase tracking-[0.18em] text-foreground/40">{item.label}</p>
+                          </div>
+                        ))}
+                      </button>
+                    )}
                     <GoalCard
                       goal={goal}
                       index={index}
@@ -327,25 +375,6 @@ export default function Dashboard() {
         </div>
 
         {/* ─────── SECTION DIVIDER: FOCUS AREA ─────── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mb-6 mt-10"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span style={{
-              fontFamily: 'Space Grotesk, sans-serif',
-              fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
-              textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
-            }}>
-              What You're Focused On
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
-          </div>
-        </motion.div>
-
         {/* Calendar Widget */}
          {/* Import from PageShell context */}
          <motion.div
@@ -366,7 +395,7 @@ export default function Dashboard() {
            </div>
            <CalendarWidget
              tasks={tasks}
-             goals={goals}
+             goals={visibleGoals}
              milestones={milestones}
              selectedDate={selectedDate}
              onDateSelect={setSelectedDate}
@@ -408,7 +437,84 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Active Goals */}
+        {false && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.28 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <span style={{
+              fontFamily: 'Space Grotesk, sans-serif',
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
+              textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
+            }}>
+              Personal Goals
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+            <span style={{
+              fontFamily: 'Bebas Neue, sans-serif', fontSize: 16,
+              color: '#1a3aad', letterSpacing: '0.05em',
+            }}>
+              {String(activeGoals.length).padStart(2, '0')}
+            </span>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map(i => (
+                <div key={i} style={{
+                  height: 96, borderRadius: 16,
+                  background: 'rgba(0,0,0,0.03)',
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }} />
+              ))}
+            </div>
+          ) : activeGoals.length === 0 ? (
+            <div style={{
+              textAlign: 'center', padding: '24px 0',
+              borderTop: '1px solid rgba(0,0,0,0.08)',
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+            }}>
+              <div className="inline-block chat-bubble-in mb-3" style={{ fontSize: 13 }}>
+                An empty page awaits.
+              </div>
+              <p style={{
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: 11, color: 'rgba(0,0,0,0.35)', letterSpacing: '0.2em',
+              }}>
+                Begin your first entry.
+              </p>
+            </div>
+          ) : (
+            <>
+              {activeGoals.map((goal, i) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  index={i}
+                  onCheckin={(g) => checkinMutation.mutate({ goal: g, prevRankId: currentRank.id })}
+                  onComplete={(g) => completeMutation.mutate(g)}
+                  onDelete={() => handleDeleteGoal(goal)}
+                />
+              ))}
+              {!canAddGoal && (
+                <div style={{
+                  marginTop: 12, padding: '10px 14px',
+                  background: 'rgba(255,180,0,0.08)', border: '1px solid rgba(255,180,0,0.2)',
+                  borderRadius: 12, textAlign: 'center',
+                  fontFamily: 'Space Grotesk, sans-serif', fontSize: 11,
+                  color: 'rgba(0,0,0,0.6)',
+                }}>
+                  Max 3 active goals. Complete or delete one to add more.
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
+        )}
+
         {false && (
         <motion.div
           initial={{ opacity: 0 }}

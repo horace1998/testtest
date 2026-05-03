@@ -8,6 +8,7 @@ import PageShell from '@/components/PageShell';
 import CircleMembersList from '@/components/circle/CircleMembersList';
 import CircleStoryComposer from '@/components/circle/CircleStoryComposer';
 import CircleUnifiedFeed from '@/components/circle/CircleUnifiedFeed';
+import { isMissionMember } from '@/lib/missionMembership';
 
 export default function SupportCircle() {
   const { id } = useParams();
@@ -32,10 +33,7 @@ export default function SupportCircle() {
     queryFn: () => synkify.entities.Goal.list('-created_date'),
   });
 
-  const isMember = !!mission && (
-    mission.creator_email === user?.email ||
-    (mission.members || []).some(m => m.user_email === user?.email)
-  );
+  const isMember = isMissionMember(mission, user?.email);
 
   if (isLoading || !mission) {
     return (
@@ -65,18 +63,7 @@ export default function SupportCircle() {
     );
   }
 
-  // Combine creator + members in one list (creator first, dedup)
-  const allMembers = [
-    ...((mission.creator_email && !(mission.members || []).some(m => m.user_email === mission.creator_email))
-      ? [{
-          user_email: mission.creator_email,
-          user_name: mission.creator_name,
-          joined_date: mission.created_date,
-        }]
-      : []
-    ),
-    ...(mission.members || []),
-  ];
+  const allMembers = mission.members || [];
 
   return (
     <div className="min-h-screen relative pb-28">

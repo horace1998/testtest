@@ -233,7 +233,9 @@ const invokeFunction = async (name, payload = {}) => {
     const currentUser = state.currentUser;
     const mission = state.collections.Mission.find((item) => item.id === payload.mission_id);
     if (mission) {
-      mission.members = (mission.members || []).filter((member) => member.user_email !== currentUser.email);
+      mission.members = (mission.members || []).filter(
+        (member) => member.user_email?.toLowerCase() !== currentUser.email?.toLowerCase()
+      );
       mission.member_count = mission.members.length;
       if (mission.creator_email === currentUser.email || mission.members.length === 0) {
         mission.status = 'closed';
@@ -241,7 +243,10 @@ const invokeFunction = async (name, payload = {}) => {
       mission.updated_date = nowIso();
     }
     state.collections.Goal = state.collections.Goal.map((goal) =>
-      goal.id === payload.goal_id || goal.mission_id === payload.mission_id
+      goal.created_by === currentUser.email &&
+      goal.status === 'active' &&
+      goal.mission_id === payload.mission_id &&
+      (!payload.goal_id || goal.id === payload.goal_id)
         ? { ...goal, status: 'abandoned', updated_date: nowIso() }
         : goal
     );

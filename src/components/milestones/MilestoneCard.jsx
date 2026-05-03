@@ -34,11 +34,19 @@ export default function MilestoneCard({ milestone, index = 0, currentUserEmail }
         {/* Asset image */}
         <div className="relative aspect-square">
           {milestone.asset_url ? (
-            <img
-              src={milestone.asset_url}
-              alt={milestone.goal_title}
-              className="w-full h-full object-cover"
-            />
+            milestone.asset_type === 'video' ? (
+              <video
+                src={milestone.asset_url}
+                controls
+                className="w-full h-full bg-black object-contain"
+              />
+            ) : (
+              <img
+                src={milestone.asset_url}
+                alt={milestone.goal_title}
+                className="w-full h-full object-cover"
+              />
+            )
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-foreground/5">
               <ImageIcon className="w-10 h-10 text-foreground/30" />

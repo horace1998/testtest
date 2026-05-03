@@ -6,39 +6,25 @@ import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageCircle, Newspaper } from 'lucide-react';
 import StoryReplies from '@/components/circle/StoryReplies';
 
-export default function CircleUnifiedFeed({ circleId, members = [], currentUser }) {
+export default function CircleUnifiedFeed({ circleId, currentUser }) {
   const queryClient = useQueryClient();
   const [replySignals, setReplySignals] = useState({});
-  const memberEmails = members.map((member) => member.user_email).filter(Boolean);
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['circle-unified-feed', circleId, memberEmails.slice().sort().join(',')],
+    queryKey: ['circle-unified-feed', circleId],
     queryFn: async () => {
-      const memberLists = memberEmails.length
-        ? await Promise.all(
-            memberEmails.map((email) =>
-              synkify.entities.FeedPost.filter({ user_email: email }, '-created_date', 20).catch(() => [])
-            )
-          )
-        : [];
-      const circleStories = circleId
+      const circlePosts = circleId
         ? await synkify.entities.FeedPost.filter(
-            { support_circle_id: circleId, post_type: 'circle_story' },
+            { support_circle_id: circleId },
             '-updated_date',
             50
           ).catch(() => [])
         : [];
 
-      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const merged = [...memberLists.flat(), ...circleStories]
+      return circlePosts
         .filter((post) => post.moderation_status !== 'blocked')
-        .filter((post) => post.post_type === 'circle_story' || new Date(post.created_date).getTime() >= sevenDaysAgo);
-
-      const byId = new Map();
-      merged.forEach((post) => byId.set(post.id, post));
-      return [...byId.values()].sort(
-        (a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date)
-      );
+        .filter((post) => post.support_circle_id === circleId)
+        .sort((a, b) => new Date(b.updated_date || b.created_date) - new Date(a.updated_date || a.created_date));
     },
     enabled: !!circleId,
   });
@@ -98,9 +84,9 @@ export default function CircleUnifiedFeed({ circleId, members = [], currentUser 
     <div className="space-y-3">
       {posts.map((post, index) => {
         const initial = (post.user_name || post.user_email || '?').charAt(0).toUpperCase();
-        const isCirclePost = post.post_type === 'circle_story';
         const likes = (post.cheers || []).filter((cheer) => cheer.reaction === 'heart').length;
         const liked = (post.cheers || []).some((cheer) => cheer.user_email === currentUser?.email && cheer.reaction === 'heart');
+        const isVideo = post.asset_type === 'video';
         return (
           <motion.div
             key={post.id}
@@ -117,9 +103,7 @@ export default function CircleUnifiedFeed({ circleId, members = [], currentUser 
               <div
                 className="flex h-7 w-7 items-center justify-center rounded-full"
                 style={{
-                  background: isCirclePost
-                    ? 'linear-gradient(135deg, #1a3aad, #4d7fff)'
-                    : 'linear-gradient(135deg, #4d7fff, #1a3aad)',
+                  background: 'linear-gradient(135deg, #1a3aad, #4d7fff)',
                   color: '#fff',
                   fontFamily: 'Bebas Neue, Impact, sans-serif',
                   fontSize: 12,
@@ -133,7 +117,7 @@ export default function CircleUnifiedFeed({ circleId, members = [], currentUser 
                   {post.user_name || post.user_email?.split('@')[0]}
                 </p>
                 <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)' }}>
-                  {formatDistanceToNow(new Date(post.updated_date || post.created_date), { addSuffix: true })} / {isCirclePost ? 'circle' : 'public'}
+                  {formatDistanceToNow(new Date(post.updated_date || post.created_date), { addSuffix: true })} / circle
                 </p>
               </div>
             </div>
@@ -152,7 +136,11 @@ export default function CircleUnifiedFeed({ circleId, members = [], currentUser 
 
             {post.asset_url && (
               <div className="mt-2 overflow-hidden rounded-xl" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
-                <img src={post.asset_url} alt="" className="max-h-80 w-full object-cover" />
+                {isVideo ? (
+                  <video src={post.asset_url} controls className="max-h-80 w-full bg-black object-contain" />
+                ) : (
+                  <img src={post.asset_url} alt="" className="max-h-80 w-full object-cover" />
+                )}
               </div>
             )}
 

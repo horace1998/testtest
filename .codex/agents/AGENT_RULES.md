@@ -2,6 +2,16 @@
 
 These rules apply to every SYNKIFY agent.
 
+## Agent Shortcuts
+
+Use these nicknames to call project agents quickly:
+
+- `@PL` or `@Lead` = `$synkify-product-lead`
+- `@UI` or `@Designer` = `$synkify-ui-specialist`
+- `@DA` or `@Data` = `$synkify-data-architect`
+
+When a request uses a shortcut, load the matching skill and apply its `SKILL.md` before working.
+
 ## Scope
 
 - Work only on the files assigned or directly relevant.

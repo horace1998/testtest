@@ -5,6 +5,7 @@ import { synkify } from '@/api/synkifyClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { moderate } from '@/lib/moderation';
+import { assetTypeFromFile } from '@/lib/circleFeed';
 
 export default function CircleStoryComposer({ circleId, mission, currentUser }) {
   const [text, setText] = useState('');
@@ -41,9 +42,11 @@ export default function CircleStoryComposer({ circleId, mission, currentUser }) 
       }
 
       let asset_url = '';
+      let asset_type = '';
       if (file) {
         const { file_url } = await synkify.integrations.Core.UploadFile({ file });
         asset_url = file_url;
+        asset_type = assetTypeFromFile(file);
       }
 
       await synkify.entities.FeedPost.create({
@@ -53,7 +56,7 @@ export default function CircleStoryComposer({ circleId, mission, currentUser }) 
         idol_group: mission?.idol_group || '',
         goal_title: mission?.title || '',
         asset_url,
-        asset_type: file ? 'photo' : '',
+        asset_type,
         caption: trimmed,
         support_circle_id: circleId,
         post_type: 'circle_story',
@@ -63,6 +66,7 @@ export default function CircleStoryComposer({ circleId, mission, currentUser }) 
       setText('');
       clearFile();
       queryClient.invalidateQueries({ queryKey: ['circle-stories', circleId] });
+      queryClient.invalidateQueries({ queryKey: ['circle-unified-feed', circleId] });
       toast.success('Story shared with the circle.');
     } catch (e) {
       toast.error('Could not share story');
@@ -102,7 +106,11 @@ export default function CircleStoryComposer({ circleId, mission, currentUser }) 
 
       {filePreview && (
         <div className="relative mb-2 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.07)' }}>
-          <img src={filePreview} alt="" className="w-full max-h-60 object-cover" />
+          {file?.type?.startsWith('video/') ? (
+            <video src={filePreview} controls className="w-full max-h-60 bg-black object-contain" />
+          ) : (
+            <img src={filePreview} alt="" className="w-full max-h-60 object-cover" />
+          )}
           <button
             onClick={clearFile}
             className="absolute top-2 right-2 rounded-full p-1.5"
@@ -119,8 +127,8 @@ export default function CircleStoryComposer({ circleId, mission, currentUser }) 
           fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase',
           color: 'rgba(0,0,0,0.55)',
         }}>
-          <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
-          <ImageIcon className="w-3.5 h-3.5" /> Add photo
+          <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
+          <ImageIcon className="w-3.5 h-3.5" /> Add media
         </label>
         <button
           onClick={handlePost}

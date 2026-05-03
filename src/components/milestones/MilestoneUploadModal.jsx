@@ -5,10 +5,11 @@ import GlassButton from '@/components/ui/GlassButton';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { synkify } from '@/api/synkifyClient';
 import { X, Upload, ImageIcon, Check } from 'lucide-react';
+import { assetTypeFromFile, createCircleMilestonePost } from '@/lib/circleFeed';
 
-const ASSET_TYPES = ['badge', 'fanart', 'photo', 'sticker'];
+const ASSET_TYPES = ['badge', 'fanart', 'photo', 'video', 'sticker'];
 
-export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal }) {
+export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal, user }) {
   const [assetUrl, setAssetUrl] = useState(null);
   const [assetType, setAssetType] = useState('badge');
   const [caption, setCaption] = useState('');
@@ -22,6 +23,7 @@ export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal })
     setUploading(true);
     const { file_url } = await synkify.integrations.Core.UploadFile({ file });
     setAssetUrl(file_url);
+    setAssetType(assetTypeFromFile(file));
     setUploading(false);
   };
 
@@ -38,6 +40,13 @@ export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal })
       timeline_value: goal?.timeline_value,
       timeline_unit: goal?.timeline_unit,
       checkins_completed: goal?.daily_checkins?.filter(c => c.completed).length || 0,
+    });
+    await createCircleMilestonePost({
+      user,
+      goal,
+      assetUrl,
+      assetType,
+      caption: caption.trim(),
     });
     setSaving(false);
     onSaved?.();
@@ -85,14 +94,25 @@ export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal })
                 onClick={() => fileRef.current?.click()}
               >
                 {assetUrl ? (
-                  <motion.img
-                    src={assetUrl}
-                    alt="Milestone asset"
-                    className="w-full h-48 object-cover"
+                  assetType === 'video' ? (
+                    <motion.video
+                      src={assetUrl}
+                      controls
+                      className="w-full h-48 bg-black object-contain"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: 'spring' }}
+                    />
+                  ) : (
+                    <motion.img
+                      src={assetUrl}
+                      alt="Milestone asset"
+                      className="w-full h-48 object-cover"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: 'spring' }}
-                  />
+                    />
+                  )
                 ) : (
                   <div className="border-2 border-dashed border-foreground/20 rounded-2xl h-48 flex flex-col items-center justify-center gap-3 hover:border-foreground/40 transition-colors">
                     {uploading ? (
@@ -112,7 +132,7 @@ export default function MilestoneUploadModal({ isOpen, onClose, onSaved, goal })
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   className="hidden"
                   onChange={handleFileChange}
                 />

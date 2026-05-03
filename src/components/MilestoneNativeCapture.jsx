@@ -5,12 +5,13 @@ import GlassCard from '@/components/ui/GlassCard';
 import GlassButton from '@/components/ui/GlassButton';
 import ModalPortal from '@/components/ui/ModalPortal';
 import { synkify } from '@/api/synkifyClient';
+import { assetTypeFromFile } from '@/lib/circleFeed';
 
 /**
  * MilestoneNativeCapture - Lets the user pick a goal, then opens the
  * device's native camera app (via <input capture>) so all hardware
- * controls (flash, zoom, etc.) are available. Uploads the photo and
- * returns it through onClose(fileUrl, goal).
+ * controls (flash, zoom, etc.) are available. Uploads the media and
+ * returns it through onClose(fileUrl, goal, assetType).
  */
 export default function MilestoneNativeCapture({ isOpen, onClose, goals = [] }) {
   const fileInputRef = useRef(null);
@@ -35,7 +36,7 @@ export default function MilestoneNativeCapture({ isOpen, onClose, goals = [] }) 
     setUploading(true);
     const { file_url } = await synkify.integrations.Core.UploadFile({ file });
     setUploading(false);
-    onClose(file_url, selectedGoal);
+    onClose(file_url, selectedGoal, assetTypeFromFile(file));
   };
 
   return (
@@ -108,7 +109,7 @@ export default function MilestoneNativeCapture({ isOpen, onClose, goals = [] }) 
                   </GlassButton>
 
                   <p className="text-[10px] text-muted-foreground text-center mt-3">
-                    Opens your device camera with native controls.
+                    Opens your device camera or media picker with native controls.
                   </p>
                 </>
               )}
@@ -116,7 +117,7 @@ export default function MilestoneNativeCapture({ isOpen, onClose, goals = [] }) 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 capture="environment"
                 onChange={handleFile}
                 className="hidden"

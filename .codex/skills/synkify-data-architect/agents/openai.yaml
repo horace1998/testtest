@@ -1,0 +1,6 @@
+interface:
+  display_name: "Data Architect"
+  short_description: "Protect Synkify Firebase and data flows"
+  default_prompt: "Use $synkify-data-architect to review this Synkify Firebase, auth, or API change."
+policy:
+  allow_implicit_invocation: true

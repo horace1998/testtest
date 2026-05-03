@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { synkify } from '@/api/synkifyClient';
 import ThreeBackground from '@/components/ThreeBackground';
 import GlassCard from '@/components/ui/GlassCard';
 import PageShell from '@/components/PageShell';
 import MissionCard from '@/components/missions/MissionCard';
-import { Users, Flame, TrendingUp } from 'lucide-react';
+import GoalCard from '@/components/dashboard/GoalCard';
+import { ArrowRight, Users, Flame, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { shouldShowMissionAsMine } from '@/lib/missionMembership';
+import { repairMissionStateForUser } from '@/lib/repairMissionState';
+import { leaveGoal } from '@/lib/leaveGoal';
+import { useNavAction } from '@/lib/NavActionContext';
 
 export default function Missions() {
   const [filterGroup, setFilterGroup] = useState('all');
   const [tab, setTab] = useState('mine'); // mine | trending | new
   const queryClient = useQueryClient();
+  const { select } = useNavAction();
 
   // Scroll to top on mount
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
@@ -48,6 +56,38 @@ export default function Missions() {
     queryFn: () => synkify.entities.Goal.list('-created_date'),
   });
 
+  const checkinMutation = useMutation({
+    mutationFn: (goal) => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const checkins = [...(goal.daily_checkins || []), { date: today, completed: true, note: '' }];
+      return synkify.entities.Goal.update(goal.id, { daily_checkins: checkins });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: (goal) => synkify.entities.Goal.update(goal.id, { status: 'completed', progress: 100 }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: (goal) => leaveGoal(goal),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+    },
+  });
+
+  useEffect(() => {
+    if (!user?.email || goals.length === 0) return;
+
+    repairMissionStateForUser(user, goals).then((result) => {
+      if (!result.abandonedGoals && !result.leftMissions) return;
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['missions'] });
+    }).catch(() => null);
+  }, [goals, queryClient, user]);
+
   const groups = ['all', ...new Set(missions.map(m => m.idol_group).filter(Boolean))];
 
   let filtered = filterGroup === 'all' ? missions : missions.filter(m => m.idol_group === filterGroup);
@@ -55,25 +95,18 @@ export default function Missions() {
   if (tab === 'trending') {
     filtered = [...filtered].sort((a, b) => (b.member_count || 0) - (a.member_count || 0));
   } else if (tab === 'mine') {
-    const userEmail = user?.email?.toLowerCase();
-
-    // Use multiple ownership signals because older mission goals may not have mission_id backfilled.
-    const activeMissionIds = new Set(
-      goals.filter(g => g.status === 'active' && g.mission_id).map(g => g.mission_id)
-    );
-    const activePublicGoalFingerprints = new Set(
-      goals
-        .filter(g => g.status === 'active' && g.is_mission_creator)
-        .map(g => `${g.title || ''}|${g.idol_name || ''}|${g.idol_group || ''}`)
-    );
-
-    filtered = filtered.filter(m =>
-      m.creator_email?.toLowerCase() === userEmail ||
-      activeMissionIds.has(m.id) ||
-      (m.members || []).some(member => member.user_email?.toLowerCase() === userEmail) ||
-      activePublicGoalFingerprints.has(`${m.title || ''}|${m.idol_name || ''}|${m.idol_group || ''}`)
-    );
+    filtered = filtered.filter(m => shouldShowMissionAsMine(m, goals, user?.email));
   }
+
+  const privateGoals = goals.filter((goal) => {
+    if (tab !== 'mine') return false;
+    if (goal.status !== 'active' || goal.mission_id) return false;
+    return filterGroup === 'all' || goal.idol_group === filterGroup;
+  });
+  const publicMissionGoals = filtered
+    .map((mission) => goals.find((goal) => goal.status === 'active' && goal.mission_id === mission.id))
+    .filter(Boolean);
+  const hasMineItems = privateGoals.length > 0 || publicMissionGoals.length > 0;
 
   return (
     <div className="min-h-screen relative pb-28">
@@ -148,17 +181,16 @@ export default function Missions() {
                 Create a goal and toggle "Public mission" to be the first!
               </p>
             </GlassCard>
-          ) : tab === 'mine' && filtered.length === 0 ? (
+          ) : tab === 'mine' && !hasMineItems ? (
             <GlassCard className="p-8 text-center">
               <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-heading font-semibold mb-1">No active missions</p>
+              <p className="font-heading font-semibold mb-1">No active goals</p>
               <p className="text-sm text-muted-foreground mb-4">
-                Create a public mission or join one to get started!
+                Create a private goal, publish a mission, or join one to get started.
               </p>
               <button
                 onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  setTimeout(() => document.querySelector('[data-scroll-to-goal]')?.click?.(), 300);
+                  select('goal');
                 }}
                 style={{
                   fontFamily: 'Space Grotesk, sans-serif', fontSize: 11,
@@ -167,12 +199,71 @@ export default function Missions() {
                   color: '#fff', borderRadius: 12, padding: '10px 20px',
                 }}
               >
-                Create a Mission
+                Create a Goal
               </button>
             </GlassCard>
           ) : (
-            <div>
-              {filtered.map((m, i) => (
+            <div className="space-y-6">
+              {tab === 'mine' && privateGoals.length > 0 && (
+                <section>
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="text-[9px] font-heading font-bold uppercase tracking-[0.35em] text-foreground/35">
+                      Private Goals
+                    </span>
+                    <div className="h-px flex-1 bg-foreground/10" />
+                    <span className="font-display text-base leading-none text-primary">
+                      {String(privateGoals.length).padStart(2, '0')}
+                    </span>
+                  </div>
+                  {privateGoals.map((goal, i) => (
+                    <GoalCard
+                      key={goal.id}
+                      goal={goal}
+                      index={i}
+                      onCheckin={(g) => checkinMutation.mutate(g)}
+                      onComplete={(g) => completeMutation.mutate(g)}
+                      onDelete={() => leaveMutation.mutate(goal)}
+                    />
+                  ))}
+                </section>
+              )}
+
+              {publicMissionGoals.length > 0 && (
+                <section>
+                  {tab === 'mine' && (
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="text-[9px] font-heading font-bold uppercase tracking-[0.35em] text-foreground/35">
+                        Public Missions
+                      </span>
+                      <div className="h-px flex-1 bg-foreground/10" />
+                      <span className="font-display text-base leading-none text-primary">
+                        {String(publicMissionGoals.length).padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+                  {publicMissionGoals.map((goal, i) => (
+                    <div key={goal.id} className="relative">
+                      <Link
+                        to={`/circle/${goal.mission_id}`}
+                        className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-foreground/10 bg-white/95 text-primary shadow-sm"
+                        aria-label="Open support circle"
+                        title="Open support circle"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      <GoalCard
+                        goal={goal}
+                        index={i}
+                        onCheckin={(g) => checkinMutation.mutate(g)}
+                        onComplete={(g) => completeMutation.mutate(g)}
+                        onDelete={() => leaveMutation.mutate(goal)}
+                      />
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {tab !== 'mine' && filtered.map((m, i) => (
                 <MissionCard key={m.id} mission={m} currentUser={user} userGoals={goals} index={i} />
               ))}
             </div>

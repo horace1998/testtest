@@ -1,0 +1,6 @@
+interface:
+  display_name: "Product Lead"
+  short_description: "Plan, review, and coordinate Synkify work"
+  default_prompt: "Use $synkify-product-lead to review scope, risks, and release readiness for this Synkify change."
+policy:
+  allow_implicit_invocation: true

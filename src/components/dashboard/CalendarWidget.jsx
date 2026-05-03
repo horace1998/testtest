@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addMonths, subMonths, subDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import GlassCard from '@/components/ui/GlassCard';
 
 export default function CalendarWidget({ tasks = [], goals = [], milestones = [], selectedDate, onDateSelect, onNewTask }) {
-  const [viewMode, setViewMode] = useState('monthly');
   const [displayMonth, setDisplayMonth] = useState(selectedDate);
 
   const monthStart = startOfMonth(displayMonth);
@@ -28,15 +27,18 @@ export default function CalendarWidget({ tasks = [], goals = [], milestones = []
     return tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), date));
   };
 
-  const heatDays = eachDayOfInterval({ start: subDays(new Date(), 13), end: new Date() });
   const activityForDate = (date) => {
     const goalCount = goals.filter((goal) => goal.created_date && isSameDay(new Date(goal.created_date), date)).length;
+    const checkinCount = goals.reduce((count, goal) => {
+      const checkins = goal.daily_checkins || [];
+      return count + checkins.filter((checkin) => checkin.completed && checkin.date && isSameDay(new Date(checkin.date), date)).length;
+    }, 0);
     const captureCount = milestones.filter((milestone) => milestone.created_date && isSameDay(new Date(milestone.created_date), date)).length;
     const taskCount = tasks.filter((task) => {
       const taskDate = task.created_date || task.due_date;
       return taskDate && isSameDay(new Date(taskDate), date);
     }).length;
-    return { goalCount, captureCount, taskCount, total: goalCount + captureCount + taskCount };
+    return { goalCount, checkinCount, captureCount, taskCount, total: goalCount + checkinCount + captureCount + taskCount };
   };
   const heatColor = (total) => {
     if (total >= 6) return '#0d1117';
@@ -45,59 +47,37 @@ export default function CalendarWidget({ tasks = [], goals = [], milestones = []
     if (total >= 1) return '#a9c0ff';
     return 'rgba(0,0,0,0.055)';
   };
-  const heatStats = heatDays.reduce(
+  const monthStats = monthDays.reduce(
     (acc, day) => {
       const activity = activityForDate(day);
       acc.goals += activity.goalCount;
+      acc.checkins += activity.checkinCount;
       acc.captures += activity.captureCount;
       acc.tasks += activity.taskCount;
       acc.total += activity.total;
       return acc;
     },
-    { goals: 0, captures: 0, tasks: 0, total: 0 }
+    { goals: 0, checkins: 0, captures: 0, tasks: 0, total: 0 }
   );
 
   return (
     <GlassCard variant="strong" className="p-6 mb-6" animate={false}>
-      {/* Header with toggle */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode('weekly')}
-            className={`px-4 py-1.5 rounded-full text-sm font-heading font-bold transition-all ${
-              viewMode === 'weekly'
-                ? 'bg-foreground text-background'
-                : 'text-foreground/50'
-            }`}
-          >
-            Weekly
-          </button>
-          <button
-            onClick={() => setViewMode('monthly')}
-            className={`px-4 py-1.5 rounded-full text-sm font-heading font-bold transition-all ${
-              viewMode === 'monthly'
-                ? 'bg-foreground text-background'
-                : 'text-foreground/50'
-            }`}
-          >
-            Monthly
-          </button>
-        </div>
-        {/* Settings icon placeholder */}
-        <div className="w-6 h-6 rounded-full border border-foreground/20" />
-      </div>
-
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <button
           onClick={() => setDisplayMonth(subMonths(displayMonth, 1))}
           className="p-2 hover:bg-foreground/10 rounded-lg transition-colors"
         >
           <ChevronLeft className="w-4 h-4 text-foreground" />
         </button>
-        <h2 className="text-5xl font-display font-bold text-foreground">
-          {format(displayMonth, 'MMM').toUpperCase()}
-        </h2>
+        <div className="text-center">
+          <p className="text-[9px] font-heading font-bold uppercase tracking-[0.32em] text-foreground/35">
+            Activity Heatmap
+          </p>
+          <h2 className="mt-1 text-5xl font-display font-bold text-foreground">
+            {format(displayMonth, 'MMM').toUpperCase()}
+          </h2>
+        </div>
         <button
           onClick={() => setDisplayMonth(addMonths(displayMonth, 1))}
           className="p-2 hover:bg-foreground/10 rounded-lg transition-colors"
@@ -106,40 +86,38 @@ export default function CalendarWidget({ tasks = [], goals = [], milestones = []
         </button>
       </div>
 
-      {/* Calendar grid */}
-      <div className="mb-6">
+      {/* Monthly heatmap */}
+      <div>
         {/* Day headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-1.5 mb-2">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-            <div key={day} className="text-center text-xs font-heading font-bold text-foreground/50">
+            <div key={day} className="text-center text-[10px] font-heading font-bold text-foreground/40">
               {day}
             </div>
           ))}
         </div>
 
-        {/* Days grid */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1.5">
           {weeks.map((week, wi) =>
             week.map((date, di) => {
               const isSelected = date && isSameDay(date, selectedDate);
-              const dayTasks = date ? getDayTasks(date) : [];
+              const activity = date ? activityForDate(date) : null;
 
               return (
                 <button
                    key={`${wi}-${di}`}
                    onClick={() => date && onDateSelect(date)}
                    disabled={!date}
-                   className={`aspect-square rounded-lg flex items-center justify-center text-sm font-heading transition-all relative ${
-                     !date
-                       ? 'cursor-default'
-                       : isSelected
-                       ? 'bg-foreground text-background font-bold'
-                       : dayTasks.length > 0
-                       ? 'bg-primary/20 text-foreground font-bold'
-                       : 'text-foreground'
-                   }`}
+                   title={date ? `${format(date, 'MMM d')}: ${activity.total} activity` : ''}
+                   className="aspect-square rounded-md border text-[10px] font-heading font-bold transition-transform active:scale-95"
+                   style={{
+                     background: date ? heatColor(activity.total) : 'transparent',
+                     borderColor: isSelected ? '#0d1117' : date && activity.total ? 'rgba(26,58,173,0.22)' : 'rgba(0,0,0,0.06)',
+                     color: activity?.total >= 4 ? '#fff' : 'rgba(0,0,0,0.52)',
+                     boxShadow: isSelected ? '0 0 0 2px rgba(13,17,23,0.18)' : 'none',
+                   }}
                  >
-                   {date && <span className="text-xs">{format(date, 'd')}</span>}
+                   {date && format(date, 'd')}
                  </button>
               );
             })
@@ -147,14 +125,14 @@ export default function CalendarWidget({ tasks = [], goals = [], milestones = []
         </div>
       </div>
 
-      <div className="pt-5 border-t border-foreground/10">
+      <div className="pt-5 mt-5 border-t border-foreground/10">
         <div className="flex items-end justify-between gap-4 mb-4">
           <div>
             <p className="text-[10px] font-heading font-bold text-foreground/50 tracking-[0.28em] uppercase">
-              Last Fortnight Activity
+              Monthly Activity
             </p>
             <h3 className="font-display text-3xl leading-none text-foreground mt-1">
-              {String(heatStats.total).padStart(2, '0')} USES
+              {String(monthStats.total).padStart(2, '0')} USES
             </h3>
           </div>
           <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -168,35 +146,14 @@ export default function CalendarWidget({ tasks = [], goals = [], milestones = []
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {heatDays.map((day) => {
-            const activity = activityForDate(day);
-            return (
-              <div key={day.toISOString()} className="min-w-0">
-                <div
-                  title={`${format(day, 'MMM d')}: ${activity.total} uses, ${activity.goalCount} goals, ${activity.captureCount} captures, ${activity.taskCount} tasks`}
-                  className="aspect-square rounded-md border"
-                  style={{
-                    background: heatColor(activity.total),
-                    borderColor: activity.total ? 'rgba(26,58,173,0.24)' : 'rgba(0,0,0,0.06)',
-                    boxShadow: activity.total ? 'inset 0 0 0 1px rgba(255,255,255,0.16)' : 'none',
-                  }}
-                />
-                <p className="mt-1 text-center text-[9px] font-heading font-bold text-foreground/35">
-                  {format(day, 'd')}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-4 gap-2 mt-4">
           {[
-            { label: 'Goals', value: heatStats.goals },
-            { label: 'Captures', value: heatStats.captures },
-            { label: 'Tasks', value: heatStats.tasks },
+            { label: 'Checkins', value: monthStats.checkins },
+            { label: 'Goals', value: monthStats.goals },
+            { label: 'Captures', value: monthStats.captures },
+            { label: 'Tasks', value: monthStats.tasks },
           ].map((item) => (
-            <div key={item.label} className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-center">
+            <div key={item.label} className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-2 text-center">
               <p className="font-display text-xl leading-none text-foreground">{String(item.value).padStart(2, '0')}</p>
               <p className="mt-1 text-[8px] font-heading font-bold uppercase tracking-[0.22em] text-foreground/40">{item.label}</p>
             </div>

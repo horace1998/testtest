@@ -180,6 +180,7 @@ export default function MilestoneGallery() {
         onClose={() => { setShowUpload(false); setSelectedGoal(null); }}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['milestones'] })}
         goal={selectedGoal}
+        user={user}
       />
       </PageShell>
     </div>

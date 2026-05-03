@@ -414,25 +414,32 @@ const invokeFunction = async (name, payload = {}) => {
     if (mission) {
       const currentParticipants = Array.isArray(mission.members) ? mission.members : [];
       const updatedParticipants = currentParticipants.filter(
-        (participant) => participant.user_email !== user.email
+        (participant) => participant.user_email?.toLowerCase() !== user.email?.toLowerCase()
       );
 
       previousMemberCount = currentParticipants.length;
       memberCount = updatedParticipants.length;
 
-      if (updatedParticipants.length === 0) {
-        await deleteDoc(missionRef);
-        deleted = true;
-      } else {
-        await updateDoc(missionRef, {
-          members: updatedParticipants,
-          member_count: updatedParticipants.length,
-          updated_date: nowIso(),
-        });
-      }
+      await updateDoc(missionRef, {
+        members: updatedParticipants,
+        member_count: updatedParticipants.length,
+        status: updatedParticipants.length === 0 ? 'closed' : mission.status,
+        updated_date: nowIso(),
+      });
     }
-    if (payload.goal_id) {
-      await entityApi('Goal').update(payload.goal_id, { status: 'abandoned' });
+    const userMissionGoals = (await entityApi('Goal').list('-created_date', 100)).filter(
+      (goal) =>
+        goal.mission_id === payload.mission_id &&
+        goal.status === 'active' &&
+        (!payload.goal_id || goal.id === payload.goal_id)
+    );
+    await Promise.all(userMissionGoals.map((goal) => entityApi('Goal').update(goal.id, { status: 'abandoned' })));
+
+    if (payload.goal_id && !userMissionGoals.some((goal) => goal.id === payload.goal_id)) {
+      const targetGoal = await entityApi('Goal').get(payload.goal_id);
+      if (targetGoal?.status === 'active') {
+        await entityApi('Goal').update(payload.goal_id, { status: 'abandoned' });
+      }
     }
     return {
       data: {
