@@ -1,9 +1,63 @@
 $ErrorActionPreference = "Stop"
 
-$ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BundledNode = "C:\Users\horac\Documents\Codex\2026-05-02\synkify\.tools\node-v22.15.0-win-x64\node.exe"
-$Node = if (Test-Path -LiteralPath $BundledNode) { $BundledNode } else { "node" }
-$Vite = Join-Path $ProjectDir "node_modules\vite\bin\vite.js"
+$ProjectArg = if ($args.Length -gt 0) { Resolve-Path -LiteralPath $args[0] | Select-Object -ExpandProperty Path } else { $null }
+$ProjectDir = if ($ProjectArg) { $ProjectArg } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+
+function Find-ViteCli {
+  param([string]$Root)
+
+  $candidate = Join-Path $Root "node_modules\vite\bin\vite.js"
+  if (Test-Path -LiteralPath $candidate) {
+    return $candidate
+  }
+
+  Get-ChildItem -Path $Root -Filter vite.js -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.FullName -match "\\node_modules\\vite\\bin\\vite\.js$" } |
+    Select-Object -First 1 |
+    ForEach-Object { $_.FullName }
+}
+
+function Find-NodeExe {
+  param([string]$Root)
+
+  $paths = @()
+
+  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+  if ($nodeCmd) {
+    $paths += $nodeCmd.Source
+  }
+
+  $searchRoots = @($Root)
+  $parent = Split-Path -Parent $Root
+  while ($parent -and $searchRoots.Count -lt 6) {
+    $searchRoots += $parent
+    $parent = Split-Path -Parent $parent
+  }
+
+  foreach ($base in $searchRoots) {
+    $toolDirs = Get-ChildItem -Path $base -Directory -Filter ".tools" -Recurse -ErrorAction SilentlyContinue
+    foreach ($dir in $toolDirs) {
+      $exe = Join-Path $dir.FullName "node.exe"
+      if (Test-Path -LiteralPath $exe) {
+        $paths += $exe
+      }
+    }
+  }
+
+  foreach ($path in $paths | Select-Object -Unique) {
+    if (Test-Path -LiteralPath $path) {
+      return $path
+    }
+  }
+
+  return $null
+}
+
+$Node = Find-NodeExe -Root $ProjectDir
+if (-not $Node) {
+  $Node = "node"
+}
+$Vite = Find-ViteCli -Root $ProjectDir
 
 Write-Host ""
 Write-Host "Starting Synkify local preview from:" -ForegroundColor Cyan
