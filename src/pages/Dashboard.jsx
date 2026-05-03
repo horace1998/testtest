@@ -289,9 +289,6 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Cheers received from circle members */}
-        <CheerInbox user={user} />
-
         {/* Stats - filmstrip style */}
         <div className="grid grid-cols-3 mb-8" style={{ gap: 8 }}>
           {[

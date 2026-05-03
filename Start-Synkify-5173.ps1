@@ -22,9 +22,10 @@ function Find-NodeExe {
 
   $paths = @()
 
-  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-  if ($nodeCmd) {
-    $paths += $nodeCmd.Source
+  $projectTools = Join-Path $Root ".tools"
+  if (Test-Path -LiteralPath $projectTools) {
+    $paths += Get-ChildItem -Path $projectTools -Filter node.exe -Recurse -File -ErrorAction SilentlyContinue |
+      Select-Object -ExpandProperty FullName
   }
 
   $searchRoots = @($Root)
@@ -44,9 +45,19 @@ function Find-NodeExe {
     }
   }
 
+  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+  if ($nodeCmd) {
+    $paths += $nodeCmd.Source
+  }
+
   foreach ($path in $paths | Select-Object -Unique) {
     if (Test-Path -LiteralPath $path) {
-      return $path
+      try {
+        $version = & $path --version 2>$null
+        if ($LASTEXITCODE -eq 0 -and $version) {
+          return $path
+        }
+      } catch {}
     }
   }
 
