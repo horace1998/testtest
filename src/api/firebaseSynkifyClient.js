@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signInWithRedirect,
+  signInAnonymously,
   signOut,
 } from 'firebase/auth';
 import {
@@ -473,6 +474,10 @@ export const createFirebaseSynkifyClient = () => {
           }
           throw error;
         }
+      },
+      anonymousLogin: async () => {
+        const result = await signInAnonymously(auth);
+        return result.user;
       },
       onAuthStateChanged: (callback) => onAuthStateChanged(auth, callback),
     },

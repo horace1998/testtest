@@ -59,7 +59,7 @@ const ScrollToTop = () => {
 };
 
 const AuthenticatedApp = () => {
-  const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, anonymousLogin } = useAuth();
   const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -79,12 +79,12 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      return <LoginScreen onLogin={navigateToLogin} />;
+      return <LoginScreen onLogin={navigateToLogin} onAnonymousLogin={anonymousLogin} />;
     }
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={navigateToLogin} error={authError?.message} />;
+    return <LoginScreen onLogin={navigateToLogin} onAnonymousLogin={anonymousLogin} error={authError?.message} />;
   }
 
   if (user?.onboarded === false && location.pathname !== '/onboarding') {
@@ -106,7 +106,7 @@ const AuthenticatedApp = () => {
   );
 };
 
-const LoginScreen = ({ onLogin, error }) => (
+const LoginScreen = ({ onLogin, error, onAnonymousLogin }) => (
   <div className="fixed inset-0 flex items-center justify-center bg-background px-6">
     <div className="w-full max-w-sm text-center">
       <p className="editorial-eyebrow mb-3">Est. MMXXVI</p>
@@ -119,6 +119,14 @@ const LoginScreen = ({ onLogin, error }) => (
       >
         <LogIn className="h-4 w-4" />
         Continue with Google
+      </button>
+      <button
+        type="button"
+        onClick={onAnonymousLogin}
+        className="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-foreground px-5 py-3 text-sm font-heading font-bold text-foreground hover:bg-foreground/5 transition-transform active:scale-[0.98]"
+      >
+        <LogIn className="h-4 w-4" />
+        Continue Anonymously
       </button>
       {error && <p className="mt-4 text-xs text-red-500">{error}</p>}
     </div>

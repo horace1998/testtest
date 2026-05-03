@@ -146,6 +146,22 @@ export const SynkifyAuthProvider = ({ children }) => {
     }
   };
 
+  const anonymousLogin = async () => {
+    try {
+      if (synkify.auth.anonymousLogin) {
+        await synkify.auth.anonymousLogin();
+        if (synkify.isFirebase) return;
+        await checkUserAuth();
+      }
+    } catch (error) {
+      console.error('Anonymous login failed:', error);
+      setAuthError({
+        type: 'login_failed',
+        message: error.message || 'Anonymous login failed',
+      });
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -157,6 +173,7 @@ export const SynkifyAuthProvider = ({ children }) => {
       authChecked,
       logout,
       navigateToLogin,
+      anonymousLogin,
       checkUserAuth,
       checkAppState
     }}>
