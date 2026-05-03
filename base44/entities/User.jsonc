@@ -1,0 +1,58 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "admin"
+      ],
+      "default": "user"
+    },
+    "favorite_idol": {
+      "type": "string"
+    },
+    "favorite_group": {
+      "type": "string"
+    },
+    "nickname": {
+      "type": "string"
+    },
+    "background_image_url": {
+      "type": "string"
+    },
+    "profile_visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
+    },
+    "followers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "following": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    }
+  }
+}

@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Streetwear / K-pop collage — white base */
+    --background: 0 0% 100%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 98%;
+    --card-foreground: 220 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 225 70% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 12% 94%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 220 12% 95%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 225 70% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 12% 88%;
+    --input: 220 12% 92%;
+    --ring: 225 70% 55%;
+    --chart-1: 225 70% 55%;
+    --chart-2: 225 50% 70%;
+    --chart-3: 220 15% 45%;
+    --chart-4: 220 10% 30%;
+    --chart-5: 220 8% 20%;
+    --radius: 0.75rem;
+    --font-heading: 'Bebas Neue', 'Impact', sans-serif;
+    --font-body: 'Space Grotesk', 'Inter', sans-serif;
+    --font-display: 'Bebas Neue', 'Impact', sans-serif;
+    --font-serif-light: 'Cormorant Garamond', serif;
+    --navy: #1a3aad;
+    --navy-dark: #0d1f6b;
+    --navy-glow: rgba(26, 58, 173, 0.35);
+    --sidebar-background: 220 18% 8%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 225 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 220 12% 20%;
+    --sidebar-ring: 225 70% 55%;
+  }
+
+  .dark {
+    --background: 220 18% 8%;
+    --foreground: 0 0% 96%;
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 96%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 225 70% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 220 8% 55%;
+    --accent: 225 70% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 12% 20%;
+    --input: 220 12% 18%;
+    --ring: 225 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    background: #ffffff;
+  }
+}
+
+/* ── GLASS: light frosted panels ── */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,1);
+}
+
+.glass-subtle {
+  background: rgba(245, 247, 252, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.glass-navy {
+  background: rgba(26, 58, 173, 0.12);
+  border: 1px solid rgba(26, 58, 173, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.iridescent {
+  background: linear-gradient(135deg, rgba(26, 58, 173, 0.15) 0%, rgba(100, 60, 200, 0.1) 50%, rgba(26, 58, 173, 0.15) 100%);
+}
+
+.iridescent-border {
+  border: 1px solid rgba(26, 58, 173, 0.35);
+}
+
+/* ── SCROLLBAR HIDE ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+html, body, * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
+  width: 0 !important; height: 0 !important; display: none !important;
+}
+
+/* ── TYPOGRAPHY ── */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+.font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: 0.02em;
+}
+.font-serif-light {
+  font-family: var(--font-serif-light);
+  font-weight: 300;
+}
+
+/* Oversized poster text */
+.mega-text {
+  font-family: 'Bebas Neue', 'Impact', sans-serif;
+  font-size: clamp(5rem, 22vw, 14rem);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: rgba(255,255,255,0.06);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* iMessage-style chat bubble */
+.chat-bubble-in {
+  background: #1a3aad;
+  border-radius: 18px 18px 18px 4px;
+  color: #fff;
+  font-family: var(--font-body);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: 0 4px 20px rgba(26, 58, 173, 0.4);
+}
+.chat-bubble-out {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 18px 18px 4px 18px;
+  color: rgba(255,255,255,0.9);
+  font-family: var(--font-body);
+  padding: 10px 16px;
+  font-size: 14px;
+  backdrop-filter: blur(12px);
+}
+
+/* Film strip cell */
+.filmstrip-cell {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+/* Editorial rule */
+.editorial-rule { height: 1px; background: rgba(255,255,255,0.12); }
+.editorial-rule-thick { height: 2px; background: rgba(255,255,255,0.8); }
+
+/* Eyebrow label */
+.editorial-eyebrow {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.38);
+}
+.editorial-italic {
+  font-family: var(--font-serif-light);
+  font-style: italic;
+}
+
+/* Navy glow utility */
+.navy-glow {
+  box-shadow: 0 0 30px rgba(26, 58, 173, 0.5), 0 0 60px rgba(26, 58, 173, 0.2);
+}
+
+/* Page background aurora */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: #ffffff;
+}
+.aurora-bg::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(26, 58, 173, 0.08) 0%, transparent 70%);
+}
+.aurora-bg::after {
+  content: '';
+  position: absolute;
+  bottom: -10%;
+  left: -15%;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(26, 58, 173, 0.05) 0%, transparent 70%);
+}
+
+/* Dreamy fade mask */
+.dreamy-fade-mask {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%);
+}
+
+/* No select / tap highlight */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent !important;
+}
+body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+html, body {
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  user-select: text !important;
+}

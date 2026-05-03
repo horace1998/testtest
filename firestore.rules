@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnerByCreatedBy() {
+      return signedIn() && resource.data.created_by == request.auth.token.email;
+    }
+
+    function createsOwnRecord() {
+      return signedIn() && request.resource.data.created_by == request.auth.token.email;
+    }
+
+    function isNotificationRecipient() {
+      return signedIn() && resource.data.user_email == request.auth.token.email;
+    }
+
+    function onlyFeedPostReactionChanged() {
+      return signedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['cheers', 'updated_date']);
+    }
+
+    match /User/{userId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && userId == request.auth.uid;
+      allow update, delete: if signedIn() && userId == request.auth.uid;
+    }
+
+    match /Goal/{docId} {
+      allow read, update, delete: if isOwnerByCreatedBy();
+      allow create: if createsOwnRecord();
+    }
+
+    match /Task/{docId} {
+      allow read, update, delete: if isOwnerByCreatedBy();
+      allow create: if createsOwnRecord();
+    }
+
+    match /Milestone/{docId} {
+      allow read, update, delete: if isOwnerByCreatedBy();
+      allow create: if createsOwnRecord();
+    }
+
+    match /HeroAsset/{docId} {
+      allow read, update, delete: if isOwnerByCreatedBy();
+      allow create: if createsOwnRecord();
+    }
+
+    match /Notification/{docId} {
+      allow read, update, delete: if isOwnerByCreatedBy() || isNotificationRecipient();
+      allow create: if createsOwnRecord();
+    }
+
+    match /FeedPost/{docId} {
+      allow read: if signedIn();
+      allow create: if createsOwnRecord();
+      allow update: if isOwnerByCreatedBy() || onlyFeedPostReactionChanged();
+      allow delete: if isOwnerByCreatedBy();
+    }
+
+    match /Comment/{docId} {
+      allow read: if signedIn();
+      allow create: if createsOwnRecord();
+      allow update, delete: if isOwnerByCreatedBy();
+    }
+
+    match /Cheer/{docId} {
+      allow read: if signedIn();
+      allow create: if createsOwnRecord();
+      allow update, delete: if isOwnerByCreatedBy();
+    }
+
+    match /Mission/{docId} {
+      allow read: if signedIn();
+      allow create: if createsOwnRecord();
+      allow update: if signedIn();
+      allow delete: if isOwnerByCreatedBy();
+    }
+
+    match /Report/{docId} {
+      allow read: if signedIn();
+      allow create: if createsOwnRecord();
+      allow update, delete: if signedIn() && request.auth.token.email == resource.data.created_by;
+    }
+  }
+}

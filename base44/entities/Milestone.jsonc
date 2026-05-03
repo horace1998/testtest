@@ -1,0 +1,53 @@
+{
+  "name": "Milestone",
+  "type": "object",
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "description": "ID of the associated goal"
+    },
+    "goal_title": {
+      "type": "string",
+      "description": "Title of the completed goal"
+    },
+    "idol_name": {
+      "type": "string",
+      "description": "Idol associated with this milestone"
+    },
+    "idol_group": {
+      "type": "string"
+    },
+    "asset_url": {
+      "type": "string",
+      "description": "URL of the uploaded fandom asset (badge/fanart)"
+    },
+    "asset_type": {
+      "type": "string",
+      "enum": [
+        "badge",
+        "fanart",
+        "photo",
+        "sticker"
+      ],
+      "default": "badge"
+    },
+    "caption": {
+      "type": "string",
+      "description": "User's personal caption for this milestone"
+    },
+    "timeline_value": {
+      "type": "number"
+    },
+    "timeline_unit": {
+      "type": "string"
+    },
+    "checkins_completed": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "goal_title",
+    "idol_name"
+  ]
+}

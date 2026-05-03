@@ -1,0 +1,52 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "feedpost",
+        "comment",
+        "mission"
+      ]
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "reporter_email": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "spam",
+        "nsfw",
+        "hate",
+        "off_topic",
+        "other"
+      ]
+    },
+    "note": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "reviewed",
+        "actioned",
+        "dismissed"
+      ],
+      "default": "open"
+    },
+    "snapshot": {
+      "type": "string",
+      "description": "Snapshot of the reported text content"
+    }
+  },
+  "required": [
+    "target_type",
+    "target_id",
+    "reason"
+  ]
+}

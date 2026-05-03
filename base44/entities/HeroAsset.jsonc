@@ -1,0 +1,84 @@
+{
+  "name": "HeroAsset",
+  "type": "object",
+  "properties": {
+    "image_url": {
+      "type": "string",
+      "description": "URL of the processed image (cutout or cropped)"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "hero",
+        "filmstrip"
+      ],
+      "default": "filmstrip",
+      "description": "hero = main banner subject, filmstrip = thumbnail row"
+    },
+    "label": {
+      "type": "string",
+      "description": "Optional label / idol name"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Order in the filmstrip"
+    },
+    "glow": {
+      "type": "number",
+      "default": 50,
+      "description": "Glow intensity 0-100"
+    },
+    "blur": {
+      "type": "number",
+      "default": 0,
+      "description": "Outline blur intensity 0-100"
+    },
+    "brightness": {
+      "type": "number",
+      "default": 100,
+      "description": "Image brightness 50-150"
+    },
+    "contrast": {
+      "type": "number",
+      "default": 100,
+      "description": "Image contrast 50-150"
+    },
+    "saturation": {
+      "type": "number",
+      "default": 100,
+      "description": "Image saturation 0-200"
+    },
+    "shadow": {
+      "type": "number",
+      "default": 50,
+      "description": "Drop shadow intensity 0-100"
+    },
+    "text_color": {
+      "type": "string",
+      "default": "#ffffff",
+      "description": "Hex color of the editorial title overlay"
+    },
+    "title_line1": {
+      "type": "string",
+      "description": "Custom first line of the editorial title overlay (defaults to group name)"
+    },
+    "title_line2": {
+      "type": "string",
+      "description": "Custom second line of the editorial title overlay (defaults to idol name)"
+    },
+    "title_x": {
+      "type": "number",
+      "default": 5,
+      "description": "Horizontal position of the title in % (0-100)"
+    },
+    "title_y": {
+      "type": "number",
+      "default": 8,
+      "description": "Vertical position of the title in % (0-100)"
+    }
+  },
+  "required": [
+    "image_url"
+  ]
+}

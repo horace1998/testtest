@@ -1,0 +1,37 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the recipient"
+    },
+    "idol_name": {
+      "type": "string"
+    },
+    "goal_title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "AI-generated motivational message from the idol"
+    },
+    "progress": {
+      "type": "number",
+      "description": "Goal progress % at time of notification"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "sent_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "user_email",
+    "idol_name",
+    "message"
+  ]
+}

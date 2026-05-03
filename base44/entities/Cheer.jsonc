@@ -1,0 +1,34 @@
+{
+  "name": "Cheer",
+  "type": "object",
+  "properties": {
+    "support_circle_id": {
+      "type": "string",
+      "description": "ID of the Mission acting as the support circle"
+    },
+    "sender_email": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "receiver_email": {
+      "type": "string",
+      "description": "Email of the circle member receiving the cheer"
+    },
+    "message": {
+      "type": "string",
+      "description": "Custom encouragement message"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "support_circle_id",
+    "sender_email",
+    "receiver_email",
+    "message"
+  ]
+}

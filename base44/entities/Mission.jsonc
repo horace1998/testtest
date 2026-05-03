@@ -1,0 +1,94 @@
+{
+  "name": "Mission",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Mission name (e.g. 'Build a better physique')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description / why join"
+    },
+    "creator_email": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "idol_group": {
+      "type": "string",
+      "description": "Group the creator is dedicating this to (used for filtering)"
+    },
+    "idol_name": {
+      "type": "string"
+    },
+    "timeline_value": {
+      "type": "number"
+    },
+    "timeline_unit": {
+      "type": "string",
+      "enum": [
+        "days",
+        "weeks",
+        "months"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "fitness",
+        "study",
+        "wellness",
+        "creative",
+        "lifestyle",
+        "other"
+      ],
+      "default": "other"
+    },
+    "member_count": {
+      "type": "number",
+      "default": 1
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          },
+          "joined_date": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "closed",
+        "blocked"
+      ],
+      "default": "active"
+    },
+    "moderation_status": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "pending",
+        "blocked"
+      ],
+      "default": "approved"
+    }
+  },
+  "required": [
+    "title",
+    "creator_email"
+  ]
+}

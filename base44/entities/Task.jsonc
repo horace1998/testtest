@@ -1,0 +1,45 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Task title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional details"
+    },
+    "goal_id": {
+      "type": "string",
+      "description": "Associated goal ID (optional)"
+    },
+    "goal_title": {
+      "type": "string"
+    },
+    "idol_name": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date assigned on calendar"
+    },
+    "due_time": {
+      "type": "string",
+      "description": "Optional time e.g. 14:30"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "done"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "title",
+    "due_date"
+  ]
+}

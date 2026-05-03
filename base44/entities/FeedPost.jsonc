@@ -1,0 +1,82 @@
+{
+  "name": "FeedPost",
+  "type": "object",
+  "properties": {
+    "milestone_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "idol_name": {
+      "type": "string"
+    },
+    "idol_group": {
+      "type": "string"
+    },
+    "goal_title": {
+      "type": "string"
+    },
+    "asset_url": {
+      "type": "string"
+    },
+    "asset_type": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "fan_rank": {
+      "type": "string"
+    },
+    "support_circle_id": {
+      "type": "string",
+      "description": "If set, this is a private story for a specific support circle (Mission)"
+    },
+    "post_type": {
+      "type": "string",
+      "enum": [
+        "public",
+        "circle_story"
+      ],
+      "default": "public",
+      "description": "public = global feed; circle_story = only visible inside the support circle"
+    },
+    "cheers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string"
+          },
+          "reaction": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "comment_count": {
+      "type": "number",
+      "default": 0
+    },
+    "moderation_status": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "pending",
+        "blocked"
+      ],
+      "default": "approved"
+    }
+  },
+  "required": [
+    "user_email",
+    "goal_title",
+    "idol_name"
+  ]
+}
