@@ -330,6 +330,26 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* ─────── SECTION DIVIDER: FOCUS AREA ─────── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6 mt-10"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span style={{
+              fontFamily: 'Space Grotesk, sans-serif',
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
+              textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
+            }}>
+              What You're Focused On
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+          </div>
+        </motion.div>
+
         {/* Calendar Widget */}
          {/* Import from PageShell context */}
          <motion.div
@@ -338,6 +358,16 @@ export default function Dashboard() {
            transition={{ delay: 0.38 }}
            className="mb-8"
          >
+           <div className="flex items-center gap-3 mb-4">
+             <span style={{
+               fontFamily: 'Space Grotesk, sans-serif',
+               fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
+               textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
+             }}>
+               Planning & Tracking
+             </span>
+             <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+           </div>
            <CalendarWidget
              tasks={tasks}
              goals={goals}
@@ -352,12 +382,32 @@ export default function Dashboard() {
            />
          </motion.div>
 
+         {/* Engagement Section */}
+         <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ delay: 0.42 }}
+           className="mb-8"
+         >
+           <div className="flex items-center gap-3 mb-4">
+             <span style={{
+               fontFamily: 'Space Grotesk, sans-serif',
+               fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
+               textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
+             }}>
+               Community Cheers
+             </span>
+             <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+           </div>
+           <CheerInbox user={user} />
+         </motion.div>
+
         {/* Milestones grid */}
         {false && milestones.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.42 }}
+            transition={{ delay: 0.46 }}
             className="mb-8"
           >
             <div className="flex items-center gap-3 mb-4">
@@ -366,9 +416,9 @@ export default function Dashboard() {
                 fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
                 textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
               }}>
-                Moments
+                Achievements & Moments
               </span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.1)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
             </div>
             <div className="grid grid-cols-3 gap-2">
               {milestones.slice(0, 6).map(m => (
