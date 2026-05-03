@@ -1,0 +1,26 @@
+name = "synkify-app"
+type = "javascript"
+account_id = ""
+workers_dev = true
+
+[env.production]
+name = "synkify-app-production"
+routes = [
+  { pattern = "synkify.app", zone_name = "synkify.app" }
+]
+
+[build]
+command = "npm run build"
+cwd = "./"
+watch_paths = ["src/**"]
+
+[build.upload]
+format = "service-worker"
+
+[env.production.build.upload]
+format = "modules"
+main = "./dist/index.html"
+
+[site]
+bucket = "./dist"
+include = ["*.html", "*.js", "*.css", "*.json"]
