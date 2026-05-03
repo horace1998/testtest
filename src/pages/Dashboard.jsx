@@ -11,7 +11,6 @@ import NotificationBell from '@/components/NotificationBell';
 import FanRankBadge from '@/components/dashboard/FanRankBadge';
 import EditorialHeader from '@/components/dashboard/EditorialHeader';
 import LevelUpModal from '@/components/LevelUpModal';
-import CheerInbox from '@/components/circle/CheerInbox';
 import HomeSplash from '@/components/dashboard/HomeSplash';
 import { leaveGoal } from '@/lib/leaveGoal';
 import { getFanRank, getRankScore } from '@/lib/fanRank';
@@ -380,26 +379,6 @@ export default function Dashboard() {
                if (handler) handler('task');
              }}
            />
-         </motion.div>
-
-         {/* Engagement Section */}
-         <motion.div
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           transition={{ delay: 0.42 }}
-           className="mb-8"
-         >
-           <div className="flex items-center gap-3 mb-4">
-             <span style={{
-               fontFamily: 'Space Grotesk, sans-serif',
-               fontSize: 9, fontWeight: 700, letterSpacing: '0.35em',
-               textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)',
-             }}>
-               Community Cheers
-             </span>
-             <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
-           </div>
-           <CheerInbox user={user} />
          </motion.div>
 
         {/* Milestones grid */}
